@@ -1,0 +1,16 @@
+# For HackerNews News tracking
+azure-identity
+openai
+dotenv
+
+# For Arxiv 
+arxiv==2.1.0
+
+# For the dashboard
+python-dateutil==2.8.2
+streamlit>=1.28.0
+plotly>=5.17.0
+pandas>=2.0.0
+
+
+
