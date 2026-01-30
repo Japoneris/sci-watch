@@ -24,6 +24,24 @@ def load_json_file(filepath):
         return json.load(f)
 
 
+def deduplicate(articles):
+    """Deduplicate articles, keeping the one with highest points for each ID."""
+    seen = {}
+    for article in articles:
+        article_id = article.get('id')
+        if article_id is None:
+            continue
+        
+        if article_id not in seen:
+            seen[article_id] = article
+        else:
+            # Keep the article with higher points
+            if article.get('points', 0) > seen[article_id].get('points', 0):
+                seen[article_id] = article
+    
+    return list(seen.values())
+
+
 def load_all_data():
     """Load all topic files and return combined data."""
     files = load_available_files()
@@ -31,8 +49,18 @@ def load_all_data():
     for f in files:
         data = load_json_file(f)
         topic_name = data.get("query_name", data.get("query_id", f.stem))
-        all_data[topic_name] = data
-    return all_data
+        if topic_name not in all_data:
+            all_data[topic_name] = data["articles"]
+        else:
+            all_data[topic_name].extend(data["articles"])
+
+    deduplicate_data = {}
+    for topic, articles in all_data.items():
+        deduplicate_data[topic] = deduplicate(articles)
+                         
+    return deduplicate_data
+
+
 
 
 def get_week_key(date_str):
@@ -78,7 +106,7 @@ with st.sidebar:
 # Build combined articles list with topic info
 all_articles_with_topic = []
 for topic_name, data in all_data.items():
-    for article in data.get("articles", []):
+    for article in data:
         article_copy = article.copy()
         article_copy["_topic"] = topic_name
         article_copy["_week"] = get_week_key(article.get("created_at", ""))
@@ -127,17 +155,12 @@ selected_topic = st.selectbox(
 )
 
 # Get articles for selected topic
-selected_data = all_data[selected_topic]
-articles = selected_data.get("articles", [])
+articles = all_data[selected_topic]
 
 # Display topic metadata
 col1, col2 = st.columns(2)
 with col1:
     st.metric("Total Articles", len(articles))
-with col2:
-    consolidated_date = selected_data.get("consolidated_date", "")
-    if consolidated_date:
-        st.metric("Last Updated", format_date(consolidated_date).split(" ")[0])
 
 if not articles:
     st.info("No articles found for this topic.")
@@ -157,6 +180,7 @@ st.divider()
 st.subheader("Articles by Week")
 
 for week in sorted_weeks:
+
     with st.expander(f"Week: {week} ({len(articles_by_week[week])} articles)"):
         week_articles = articles_by_week[week]
         # Filter by minimum points
@@ -173,7 +197,17 @@ for week in sorted_weeks:
         lst = []
         for article in week_articles_sorted:
             hn_url = f"https://news.ycombinator.com/item?id={article.get('id', '')}"
-            lst.append(f"- {article.get('points', 0)} pt  [[Link](<{article['url']}>) | [HN](<{hn_url}>)] {article['title']} ")
+            lst.append(f"- {article.get('points', 0)} pt  [[Link](<{article['url']}>) / [HN](<{hn_url}>)] {article['title']} ")
 
-        st.markdown("\n".join(lst))
+        week_markdown = "\n".join(lst)
+        st.markdown(week_markdown)
+
+        # Download button for markdown
+        filename = f"{week}.md"
+        st.download_button(
+            label=f"Download {week} markdown",
+            data=week_markdown,
+            file_name=filename,
+            mime="text/markdown"
+        )
 

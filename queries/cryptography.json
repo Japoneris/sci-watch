@@ -1,0 +1,22 @@
+{
+  "id": "cryptography",
+  "name": "Cryptography",
+  "description": "Papers related to cryptography, encryption, and security protocols",
+  "terms": [
+    "\"cryptography\"",
+    "\"encryption\"",
+    "\"public key\"",
+    "\"blockchain\"",
+    "\"cryptographic protocols\"",
+    "\"zero-knowledge proofs\"",
+    "\"homomorphic encryption\"",
+    "\"post-quantum cryptography\"",
+    "\"secure multi-party computation\""
+  ],
+  "categories": [
+    "cs.CR",
+    "cs.IT",
+    "math.IT"
+  ],
+  "source": "arxiv"
+}

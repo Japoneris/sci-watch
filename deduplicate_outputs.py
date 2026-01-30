@@ -36,7 +36,7 @@ def group_files_by_query(directory: Path) -> Dict[str, List[Path]]:
     """
     Group JSON files by query_id.
 
-    Files are named: {query_id}_{date}.json or {query_id}_{date}_{time}.json
+    Files are named: {query_id}_{date}.json (e.g., topic_2026-01-27-14.json)
     """
     groups = defaultdict(list)
 
@@ -45,14 +45,16 @@ def group_files_by_query(directory: Path) -> Dict[str, List[Path]]:
         if "_consolidated" in filepath.name:
             continue
 
-        # Extract query_id (everything before the first date pattern)
+        # Extract query_id (everything before the date pattern YYYY-MM-DD-HH)
         name = filepath.stem
-        # Find where the date starts (8 digits)
+        # Find where the date starts (format: YYYY-MM-DD-HH)
         parts = name.split("_")
 
         query_id_parts = []
-        for part in parts:
-            if part.isdigit() and len(part) == 8:
+        for i, part in enumerate(parts):
+            # Check if this looks like a date (YYYY-MM-DD-HH pattern)
+            if "-" in part and len(parts) > i:
+                # Likely start of date pattern
                 break
             query_id_parts.append(part)
 

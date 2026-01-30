@@ -1,0 +1,19 @@
+{
+  "id": "programming",
+  "name": "Programming",
+  "description": "Articles about programming languages, tools, and software development",
+  "terms": [
+    "\"programming language\"",
+    "\"software development\"",
+    "\"open source\"",
+    "\"rust\" AND \"programming\"",
+    "\"python\" AND (\"library\" OR \"framework\")",
+    "\"javascript\"",
+    "\"typescript\"",
+    "\"golang\"",
+    "\"compiler\"",
+    "\"developer tools\""
+  ],
+  "categories": [],
+  "source": "hackernews"
+}

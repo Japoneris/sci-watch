@@ -149,7 +149,7 @@ def main():
 
     # Get output directories
     hn_dir, arxiv_dir = get_output_dirs()
-    date_str = datetime.now().strftime("%Y%m%d")
+    date_str = datetime.now().strftime("%Y-%m-%d_%H:%M")
 
     # Determine which queries to run
     if args.queries:
@@ -173,7 +173,9 @@ def main():
     hn_articles = []
     if not args.arxiv_only:
         print("Fetching HackerNews front page...")
-        hn_articles = hackernews.get_front_page(hits_per_page=30)
+        hn_articles_1 = hackernews.get_front_page(hits_per_page=100)
+        hn_articles = hackernews.get_top_articles(hits_per_page=100, min_points=30)
+        hn_articles = hn_articles_1 + hn_articles
         print(f"  Fetched {len(hn_articles)} articles from front page")
         print()
 

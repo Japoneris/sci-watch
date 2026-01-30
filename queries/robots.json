@@ -1,0 +1,23 @@
+{
+  "id": "robots",
+  "name": "Robotics",
+  "description": "Papers related to robotics, robot learning, and embodied AI",
+  "terms": [
+    "\"robotics\"",
+    "\"robot learning\"",
+    "\"robotic manipulation\"",
+    "\"humanoid robots\"",
+    "\"autonomous robots\"",
+    "\"robot perception\"",
+    "\"embodied AI\"",
+    "\"robot control\"",
+    "\"mobile robots\""
+  ],
+  "categories": [
+    "cs.RO",
+    "cs.AI",
+    "cs.CV",
+    "cs.LG"
+  ],
+  "source": "arxiv"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "security",
+  "name": "Security & Hacking",
+  "description": "Articles about cybersecurity, hacking, vulnerabilities, and data breaches",
+  "terms": [
+    "\"cybersecurity\"",
+    "\"data breach\"",
+    "\"vulnerability\"",
+    "\"exploit\"",
+    "\"malware\"",
+    "\"ransomware\"",
+    "\"zero-day\"",
+    "\"CVE-\"",
+    "\"hacking\"",
+    "\"pentest\"",
+    "\"pentesting\"",
+    "\"penetration testing\"",
+    "\"security flaw\"",
+    "\"encryption\""
+  ],
+  "categories": [],
+  "source": "hackernews"
+}

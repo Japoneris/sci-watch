@@ -1,0 +1,19 @@
+{
+  "id": "databases",
+  "name": "Databases",
+  "description": "Articles about databases, SQL, and data storage",
+  "terms": [
+    "\"database\"",
+    "\"SQL\"",
+    "\"PostgreSQL\"",
+    "\"MySQL\"",
+    "\"MongoDB\"",
+    "\"Redis\"",
+    "\"SQLite\"",
+    "\"NoSQL\"",
+    "\"data warehouse\"",
+    "\"query optimization\""
+  ],
+  "categories": [],
+  "source": "hackernews"
+}

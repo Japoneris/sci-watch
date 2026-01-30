@@ -15,7 +15,7 @@ Available tags for filtering:
 import requests
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime
+import time
 
 
 BASE_URL = "http://hn.algolia.com/api/v1/"
@@ -104,6 +104,8 @@ class HackerNewsAPI:
         page: int = 0,
         hits_per_page: int = 50,
         sort_by_date: bool = False,
+        min_points: Optional[int] = None,
+        since: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Search HackerNews.
@@ -125,6 +127,15 @@ class HackerNewsAPI:
             "page": page,
             "hitsPerPage": hits_per_page,
         }
+        if min_points is not None:
+            import time
+            params["numericFilters"] = f"points>={min_points}" 
+        if since is not None:
+            if "numericFilters" in params:
+                params["numericFilters"] += f",created_at_i>={since}"
+            else:
+                params["numericFilters"] = f"created_at_i>={since}"
+
         return self._get(endpoint, params)
 
     def search_articles(
@@ -134,6 +145,8 @@ class HackerNewsAPI:
         page: int = 0,
         hits_per_page: int = 50,
         sort_by_date: bool = False,
+        min_points: Optional[int] = None,
+        since: Optional[int] = None,
     ) -> List[HNArticle]:
         """
         Search for articles and return parsed results.
@@ -154,6 +167,8 @@ class HackerNewsAPI:
             page=page,
             hits_per_page=hits_per_page,
             sort_by_date=sort_by_date,
+            min_points=min_points,
+            since=since,
         )
         return [HNArticle.from_hit(hit) for hit in response.get("hits", [])]
 
@@ -221,6 +236,20 @@ def get_front_page(hits_per_page: int = 30) -> List[Dict[str, Any]]:
     client = _get_client()
     articles = client.get_front_page(hits_per_page)
     return [a.to_dict() for a in articles]
+
+
+def get_top_articles(hits_per_page: int = 30, min_points: int = 30) -> List[Dict[str, Any]]:
+    """
+    Get current front page articles as dictionaries.
+
+    This is the primary function for fetching HN content - it only returns
+    articles currently on the front page, not historical content.
+    """
+    client = _get_client()
+    tx = time.time() - 3600 * 24
+    articles = client.search_articles(hits_per_page=hits_per_page, min_points=min_points, since=int(tx))
+    return [a.to_dict() for a in articles]
+
 
 
 def get_item(item_id: int) -> Dict[str, Any]:

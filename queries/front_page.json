@@ -1,0 +1,10 @@
+{
+  "id": "front_page",
+  "name": "Front Page (All Articles)",
+  "description": "All articles from the front page without any topic filtering",
+  "terms": [
+    "\"\""
+  ],
+  "categories": [],
+  "source": "hackernews"
+}
