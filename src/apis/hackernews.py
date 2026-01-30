@@ -238,16 +238,29 @@ def get_front_page(hits_per_page: int = 30) -> List[Dict[str, Any]]:
     return [a.to_dict() for a in articles]
 
 
-def get_top_articles(hits_per_page: int = 30, min_points: int = 30) -> List[Dict[str, Any]]:
+def get_top_articles(
+    hits_per_page: int = 30,
+    min_points: int = 30,
+    days_back: int = 1
+) -> List[Dict[str, Any]]:
     """
-    Get current front page articles as dictionaries.
+    Get top articles from the last N days.
 
-    This is the primary function for fetching HN content - it only returns
-    articles currently on the front page, not historical content.
+    Args:
+        hits_per_page: Number of articles to fetch
+        min_points: Minimum points threshold
+        days_back: Number of days to look back (default: 1)
+
+    Returns:
+        List of article dictionaries
     """
     client = _get_client()
-    tx = time.time() - 3600 * 24
-    articles = client.search_articles(hits_per_page=hits_per_page, min_points=min_points, since=int(tx))
+    since_timestamp = int(time.time() - 3600 * 24 * days_back)
+    articles = client.search_articles(
+        hits_per_page=hits_per_page,
+        min_points=min_points,
+        since=since_timestamp
+    )
     return [a.to_dict() for a in articles]
 
 

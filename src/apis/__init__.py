@@ -47,5 +47,6 @@ Integration with Query System:
 
 from . import hackernews
 from . import arxiv_api
+from . import html_parser
 
-__all__ = ['hackernews', 'arxiv_api']
+__all__ = ['hackernews', 'arxiv_api', 'html_parser']

@@ -6,9 +6,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from unified.apis import hackernews, arxiv_api
-from unified.query.query import Query
-from unified.query.loader import save_query, list_query_files, get_queries_dir
+from src.apis import hackernews, arxiv_api, html_parser
+from src.query.query import Query
+from src.query.loader import save_query, list_query_files, get_queries_dir
 import json
 
 st.title("Query Builder & Tester")
@@ -169,12 +169,23 @@ if st.button("Test Query", type="primary"):
                         terms=terms,
                     )
                     results = []
+                    matched_ids = set()
                     for r in all_articles:
                         text = f"{r.get('title', '')} {r.get('story_text', '')}"
                         if query_obj.matches(text):
-                            results.append(r)
+                            r_copy = r.copy()
+                            r_copy['_matched_on'] = 'title'
+                            results.append(r_copy)
+                            matched_ids.add(r['id'])
+
+                    # Store all articles and query for page content filtering
+                    st.session_state["hn_all_articles"] = all_articles
+                    st.session_state["hn_matched_ids"] = matched_ids
+                    st.session_state["hn_query_obj"] = query_obj
+                    st.session_state["hn_page_content_cache"] = None  # Reset cache
                 else:
                     # For arXiv, build query and search
+                    all_articles = None  # Not applicable for arXiv
                     arxiv_query = arxiv_api.build_query(terms, categories if categories else None)
                     results = arxiv_api.search_recent(
                         query=arxiv_query,
@@ -191,13 +202,66 @@ if st.button("Test Query", type="primary"):
             except Exception as e:
                 st.error(f"Error: {e}")
 
+# Page content filtering for HackerNews
+if (st.session_state.get("test_source") == "hackernews" and
+    st.session_state.get("hn_all_articles") and
+    st.session_state.get("hn_query_obj")):
+
+    all_articles = st.session_state["hn_all_articles"]
+    matched_ids = st.session_state.get("hn_matched_ids", set())
+    query_obj = st.session_state["hn_query_obj"]
+    non_matching_count = len([a for a in all_articles if a['id'] not in matched_ids and a.get('url')])
+
+    if non_matching_count > 0:
+        st.markdown("---")
+        st.markdown(f"**{non_matching_count} articles** didn't match on title. Check their page content?")
+
+        if st.button("Also check page content", type="secondary"):
+            with st.spinner(f"Fetching page content for {non_matching_count} articles..."):
+                try:
+                    # Prefetch all page content once
+                    page_content_cache = {}
+                    progress_bar = st.progress(0)
+                    articles_with_urls = [a for a in all_articles if a.get('url') and a['id'] not in matched_ids]
+
+                    for i, article in enumerate(articles_with_urls):
+                        article_id = article['id']
+                        url = article['url']
+                        page_content, error = html_parser.fetch_page_content_verbose(url)
+                        if page_content is not None:
+                            page_content_cache[article_id] = page_content
+                        progress_bar.progress((i + 1) / len(articles_with_urls))
+
+                    progress_bar.empty()
+
+                    # Apply filter to cached content
+                    page_matches = []
+                    for article in articles_with_urls:
+                        article_id = article['id']
+                        page_content = page_content_cache.get(article_id)
+                        if page_content and query_obj.matches(page_content):
+                            article_copy = article.copy()
+                            article_copy['_matched_on'] = 'page_content'
+                            page_matches.append(article_copy)
+
+                    # Add page matches to results
+                    if page_matches:
+                        st.session_state["test_results"].extend(page_matches)
+                        for a in page_matches:
+                            matched_ids.add(a['id'])
+                        st.session_state["hn_matched_ids"] = matched_ids
+                        st.success(f"Found {len(page_matches)} additional matches from page content!")
+                        st.rerun()
+                    else:
+                        st.info("No additional matches found in page content.")
+
+                except Exception as e:
+                    st.error(f"Error fetching page content: {e}")
+
 # Display results
 if "test_results" in st.session_state and st.session_state["test_results"]:
     results = st.session_state["test_results"]
     test_source = st.session_state.get("test_source", source)
-
-    #st.divider()
-    #st.subheader(f"Results ({len(results)} items)")
 
     if test_source == "hackernews":
         for article in results:
@@ -206,8 +270,10 @@ if "test_results" in st.session_state and st.session_state["test_results"]:
             points = article.get("points", 0)
             hn_id = article.get("id", "")
             hn_url = f"https://news.ycombinator.com/item?id={hn_id}"
+            matched_on = article.get("_matched_on", "title")
 
-            st.markdown(f"**{points} pts** - [{title}]({url}) [[HN]({hn_url})]")
+            badge = " *(via page)*" if matched_on == "page_content" else ""
+            st.markdown(f"**{points} pts** - [{title}]({url}) [[HN]({hn_url})]{badge}")
     else:  # arxiv
         for paper in results:
             title = paper.get("title", "No title")
