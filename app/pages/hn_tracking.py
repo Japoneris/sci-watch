@@ -112,39 +112,24 @@ for topic_name, data in all_data.items():
         article_copy["_week"] = get_week_key(article.get("created_at", ""))
         all_articles_with_topic.append(article_copy)
 
-# Build weekly counts for chart
-weekly_counts_by_topic = defaultdict(lambda: defaultdict(int))
-weekly_counts_all = defaultdict(int)
+# Filter articles by minimum points
+filtered_articles = [a for a in all_articles_with_topic if a.get("points", 0) >= min_points]
 
-for article in all_articles_with_topic:
+# Build weekly counts per topic (using filtered articles)
+weekly_counts_by_topic = defaultdict(lambda: defaultdict(int))
+
+for article in filtered_articles:
     week = article["_week"]
     topic = article["_topic"]
     weekly_counts_by_topic[topic][week] += 1
-    weekly_counts_all[week] += 1
 
-# Get all weeks sorted
-all_weeks = sorted(set(weekly_counts_all.keys()), key=get_week_start)
+# Collect all weeks across all topics
+all_weeks_set = set()
+for counts in weekly_counts_by_topic.values():
+    all_weeks_set.update(counts.keys())
+all_weeks = sorted(all_weeks_set, key=get_week_start)
 
-# Chart section
-st.subheader("Articles Published Per Week")
-
-split_by_topic = st.toggle("Split by topic", value=False)
-
-if split_by_topic:
-    # Build DataFrame with one column per topic
-    chart_data = {}
-    for topic in all_data.keys():
-        chart_data[topic] = [weekly_counts_by_topic[topic].get(week, 0) for week in all_weeks]
-    df = pd.DataFrame(chart_data, index=all_weeks)
-else:
-    # Single line for all topics combined
-    chart_data = {"All Topics": [weekly_counts_all.get(week, 0) for week in all_weeks]}
-    df = pd.DataFrame(chart_data, index=all_weeks)
-
-st.line_chart(df)
-
-# Topic selector
-st.divider()
+# Topic selector (at the top)
 st.subheader("Browse Articles by Topic")
 
 topic_names = list(all_data.keys())
@@ -160,7 +145,26 @@ articles = all_data[selected_topic]
 # Display topic metadata
 col1, col2 = st.columns(2)
 with col1:
-    st.metric("Total Articles", len(articles))
+    filtered_count = len([a for a in articles if a.get("points", 0) >= min_points])
+    st.metric("Articles (filtered)", filtered_count)
+
+# Chart section
+st.subheader("Articles Published Per Week")
+
+compare_all = st.toggle("Compare all topics", value=False)
+
+if compare_all:
+    # Show one line per topic for comparison (no summing)
+    chart_data = {}
+    for topic in all_data.keys():
+        chart_data[topic] = [weekly_counts_by_topic[topic].get(week, 0) for week in all_weeks]
+    df = pd.DataFrame(chart_data, index=all_weeks)
+else:
+    # Show only the selected topic
+    chart_data = {selected_topic: [weekly_counts_by_topic[selected_topic].get(week, 0) for week in all_weeks]}
+    df = pd.DataFrame(chart_data, index=all_weeks)
+
+st.line_chart(df)
 
 if not articles:
     st.info("No articles found for this topic.")
