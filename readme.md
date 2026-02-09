@@ -60,6 +60,11 @@ Inside, you can:
 
 ![See the first incomplete week](static/Articles.png)
 
+Note: the "collapse box count" is different from the "header count" 
+
+- First one is for total count (unfiltered, almost, we set a minima of 30 points to avoid collecting ALL articles...)
+- Second is for filtered articles (thanks to the widget in the GUI)
+
 ## Features
 
 - Filter articles by points
