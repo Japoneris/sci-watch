@@ -239,29 +239,54 @@ def get_front_page(hits_per_page: int = 30) -> List[Dict[str, Any]]:
 
 
 def get_top_articles(
-    hits_per_page: int = 30,
+    hits_per_page: int = 100,
     min_points: int = 30,
-    days_back: int = 1
+    days_back: int = 1,
+    max_pages: int = 10
 ) -> List[Dict[str, Any]]:
     """
-    Get top articles from the last N days.
+    Get top articles from the last N days, fetching all pages.
 
     Args:
-        hits_per_page: Number of articles to fetch
+        hits_per_page: Number of articles per API request (max 1000)
         min_points: Minimum points threshold
         days_back: Number of days to look back (default: 1)
+        max_pages: Maximum number of pages to fetch (default: 10, safety limit)
 
     Returns:
         List of article dictionaries
     """
     client = _get_client()
     since_timestamp = int(time.time() - 3600 * 24 * days_back)
-    articles = client.search_articles(
-        hits_per_page=hits_per_page,
-        min_points=min_points,
-        since=since_timestamp
-    )
-    return [a.to_dict() for a in articles]
+
+    all_articles = []
+    page = 0
+
+    while page < max_pages:
+        response = client.search(
+            query="",
+            tags="story",
+            page=page,
+            hits_per_page=hits_per_page,
+            sort_by_date=True,
+            min_points=min_points,
+            since=since_timestamp
+        )
+
+        hits = response.get("hits", [])
+        if not hits:
+            break
+
+        all_articles.extend([HNArticle.from_hit(hit).to_dict() for hit in hits])
+
+        # Check if there are more pages
+        nb_pages = response.get("nbPages", 1)
+        if page + 1 >= nb_pages:
+            break
+
+        page += 1
+
+    return all_articles
 
 
 

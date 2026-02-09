@@ -18,6 +18,8 @@ from typing import List, Dict, Any
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from tqdm import tqdm
+
 from src.query import load_query, list_query_files, HackerNewsAdapter, ArxivAdapter
 from src.apis import hackernews, arxiv_api, html_parser
 
@@ -84,23 +86,31 @@ def prefetch_page_content(
     Articles without URLs or with fetch errors are omitted.
     """
     cache = {}
+    failed = 0
     articles_with_urls = [a for a in articles if a.get('url')]
 
-    if verbose:
-        print(f"  Prefetching page content for {len(articles_with_urls)} articles...")
+    pbar = tqdm(
+        articles_with_urls,
+        desc="  Fetching pages",
+        unit="page",
+        bar_format="  {desc}: {bar} {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {postfix}",
+    )
 
-    for i, article in enumerate(articles_with_urls):
+    for article in pbar:
         article_id = article['id']
         url = article['url']
 
         page_content, error = html_parser.fetch_page_content_verbose(url)
         if page_content is not None:
             cache[article_id] = page_content
-        elif verbose:
-            print(f"    [{i+1}/{len(articles_with_urls)}] Skip: {article.get('title', '')[:40]}... ({error})")
+        else:
+            failed += 1
+            if verbose:
+                tqdm.write(f"    Skip: {article.get('title', '')[:40]}... ({error})")
 
-    if verbose:
-        print(f"  Prefetched {len(cache)} pages successfully")
+        pbar.set_postfix_str(f"ok={len(cache)} fail={failed}")
+
+    print(f"  Prefetched {len(cache)}/{len(articles_with_urls)} pages ({failed} failed)")
 
     return cache
 
@@ -432,6 +442,15 @@ def main():
     if not query_ids:
         print("No queries found in queries/ folder.")
         return 1
+
+    # Validate that all specified queries exist before fetching
+    if args.queries:
+        available = set(list_query_files())
+        unknown = [q for q in query_ids if q not in available]
+        if unknown:
+            print(f"Error: unknown query ID(s): {unknown}")
+            print(f"Available queries: {sorted(available)}")
+            return 1
 
     # Setup
     hn_dir, arxiv_dir = get_output_dirs()

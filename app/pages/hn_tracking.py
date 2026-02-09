@@ -200,7 +200,6 @@ for week in sorted_weeks:
             lst.append(f"- {article.get('points', 0)} pt  [[Link](<{article['url']}>) / [HN](<{hn_url}>)] {article['title']} ")
 
         week_markdown = "\n".join(lst)
-        st.markdown(week_markdown)
 
         # Download button for markdown
         filename = f"{week}.md"
@@ -210,4 +209,8 @@ for week in sorted_weeks:
             file_name=filename,
             mime="text/markdown"
         )
+
+        # Display markdown in app
+        st.markdown(week_markdown)
+
 
